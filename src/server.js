@@ -193,6 +193,14 @@ const BOARD_HTML = `<!doctype html>
     from { opacity: 0; transform: translateY(16px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
+  .cooldown {
+    position: fixed;
+    bottom: 10px;
+    right: 16px;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.28);
+    z-index: 5;
+  }
 </style>
 </head>
 <body>
@@ -222,6 +230,7 @@ const BOARD_HTML = `<!doctype html>
     <div class="played-label">Already played</div>
     <div id="playedStrip" class="played-strip"></div>
   </div>
+  <div class="cooldown" id="cooldown"></div>
 <script>
   const MAX_SHOWN = 24;
   const MAX_PLAYED_SHOWN = 60;
@@ -302,8 +311,26 @@ const BOARD_HTML = `<!doctype html>
     }
   });
 
+  async function refreshCooldown() {
+    try {
+      const res = await fetch("/status");
+      const status = await res.json();
+      const el = document.getElementById("cooldown");
+      if (status.rateLimitedUntil && new Date(status.rateLimitedUntil) > new Date()) {
+        const resumesAt = new Date(status.rateLimitedUntil).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        el.textContent = "Spotify cooldown — resumes ~" + resumesAt;
+      } else {
+        el.textContent = "";
+      }
+    } catch (err) {
+      // ignore — non-critical, just try again next tick
+    }
+  }
+
   refresh();
+  refreshCooldown();
   setInterval(refresh, 5000);
+  setInterval(refreshCooldown, 15000);
 
   // Some kiosk/WebView browsers don't reliably honor the autoplay attribute, or
   // pause the video when their native fullscreen player is tapped — force it to

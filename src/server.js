@@ -47,7 +47,7 @@ const BOARD_HTML = `<!doctype html>
   }
   .qr-side {
     position: fixed;
-    top: 20px;
+    top: 18px;
     display: flex;
     flex-direction: column;
     align-items: center;

@@ -67,22 +67,25 @@ const BOARD_HTML = `<!doctype html>
   }
   .mark-played {
     position: absolute;
-    right: 8px;
-    bottom: 8px;
-    width: 34px;
-    height: 34px;
+    right: 6px;
+    bottom: 6px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    background: rgba(0,0,0,0.55);
-    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(0,0,0,0.6);
+    border: 2px solid rgba(255,255,255,0.4);
     color: #fff;
-    font-size: 16px;
+    font-size: 20px;
     line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 2;
   }
-  .mark-played:active { background: rgba(30,215,96,0.9); }
+  .mark-played:active { background: rgba(30,215,96,0.9); transform: scale(0.94); }
   .card .info { padding: 12px 14px; }
   .card .name {
     font-size: 1.05rem;
@@ -124,17 +127,30 @@ const BOARD_HTML = `<!doctype html>
     padding: 6px 4px;
   }
   .played-card {
+    position: relative;
     flex: 0 0 auto;
-    width: 60px;
-    height: 60px;
-    border-radius: 10px;
+    width: 120px;
+    height: 120px;
+    border-radius: 14px;
     overflow: hidden;
-    margin-left: -16px;
+    margin-left: -24px;
     border: 2px solid #0b0b12;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   }
   .played-card:first-child { margin-left: 0; }
   .played-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .played-card .caption {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 16px 8px 6px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0));
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   @keyframes enter {
     from { opacity: 0; transform: translateY(16px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
@@ -190,6 +206,7 @@ const BOARD_HTML = `<!doctype html>
       strip.innerHTML = shownPlayed.map(r => \`
         <div class="played-card" title="\${escapeAttr(r.name + " — " + r.artists)}">
           <img src="\${r.imageUrl || ''}" alt="">
+          <div class="caption">\${escapeHtml(r.name)}</div>
         </div>
       \`).join("");
     } catch (err) {

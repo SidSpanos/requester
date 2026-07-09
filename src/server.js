@@ -194,28 +194,28 @@ const BOARD_HTML = `<!doctype html>
     from { opacity: 0; transform: translateY(16px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
-  .cooldown-block {
+  .cooldown-qr {
     position: fixed;
     bottom: 10%;
     right: 10%;
-    display: none;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-    z-index: 5;
-  }
-  .cooldown-qr {
     width: 152px;
     height: 152px;
     border-radius: 12px;
     background: #fff;
+    display: none;
+    z-index: 5;
   }
   .cooldown-text {
-    font-size: 0.8rem;
-    color: rgba(255,255,255,0.6);
+    position: fixed;
+    bottom: 10px;
+    right: 16px;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.55);
     text-align: right;
-    max-width: 220px;
+    max-width: 200px;
     line-height: 1.3;
+    display: none;
+    z-index: 5;
   }
 </style>
 </head>
@@ -246,10 +246,8 @@ const BOARD_HTML = `<!doctype html>
     <div class="played-label">Already played</div>
     <div id="playedStrip" class="played-strip"></div>
   </div>
-  <div class="cooldown-block" id="cooldownBlock">
-    <img class="cooldown-qr" src="/requestline.png" alt="Request via Telegram">
-    <div class="cooldown-text" id="cooldownText"></div>
-  </div>
+  <img class="cooldown-qr" id="cooldownQr" src="/requestline.png" alt="Request via Telegram">
+  <div class="cooldown-text" id="cooldownText"></div>
 <script>
   const MAX_SHOWN = 24;
   const MAX_PLAYED_SHOWN = 60;
@@ -334,14 +332,16 @@ const BOARD_HTML = `<!doctype html>
     try {
       const res = await fetch("/status");
       const status = await res.json();
-      const block = document.getElementById("cooldownBlock");
+      const qr = document.getElementById("cooldownQr");
       const textEl = document.getElementById("cooldownText");
       if (status.rateLimitedUntil && new Date(status.rateLimitedUntil) > new Date()) {
         const resumesAt = new Date(status.rateLimitedUntil).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         textEl.textContent = "Spotify's briefly limited (resumes ~" + resumesAt + ") — scan to request directly";
-        block.style.display = "flex";
+        qr.style.display = "block";
+        textEl.style.display = "block";
       } else {
-        block.style.display = "none";
+        qr.style.display = "none";
+        textEl.style.display = "none";
       }
     } catch (err) {
       // ignore — non-critical, just try again next tick

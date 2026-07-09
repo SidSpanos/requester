@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, createReadStream, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -321,6 +321,42 @@ const BOARD_HTML = `<!doctype html>
 </body>
 </html>`;
 
+// Safari (particularly iOS) requires proper HTTP Range support to play <video>
+// reliably — a flat 200-with-full-body response isn't enough, even with
+// autoplay/muted/playsinline set. Chrome is lenient and doesn't need this, which is
+// why "works on desktop Chrome, silently fails on iPad Safari" is the telltale sign.
+function serveFile(req, res, filePath, contentType) {
+  if (!existsSync(filePath)) {
+    res.writeHead(404).end();
+    return;
+  }
+
+  const { size } = statSync(filePath);
+  const range = req.headers.range;
+
+  if (!range) {
+    res.writeHead(200, {
+      "Content-Type": contentType,
+      "Content-Length": size,
+      "Accept-Ranges": "bytes",
+    });
+    createReadStream(filePath).pipe(res);
+    return;
+  }
+
+  const match = range.match(/bytes=(\d*)-(\d*)/);
+  const start = match[1] ? parseInt(match[1], 10) : 0;
+  const end = match[2] ? parseInt(match[2], 10) : size - 1;
+
+  res.writeHead(206, {
+    "Content-Type": contentType,
+    "Content-Length": end - start + 1,
+    "Content-Range": `bytes ${start}-${end}/${size}`,
+    "Accept-Ranges": "bytes",
+  });
+  createReadStream(filePath, { start, end }).pipe(res);
+}
+
 export function createHttpServer(port, { getStatus, getRequests, clearRequests, markPlayed }) {
   const server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
@@ -369,35 +405,23 @@ export function createHttpServer(port, { getStatus, getRequests, clearRequests, 
       return;
     }
 
-    if (url.pathname === "/logo.webp" && existsSync(logoWebpPath)) {
-      res.writeHead(200, { "Content-Type": "image/webp" });
-      res.end(readFileSync(logoWebpPath));
+    if (url.pathname === "/logo.webp") {
+      serveFile(req, res, logoWebpPath, "image/webp");
       return;
     }
 
-    if (url.pathname === "/logo.mp4" && existsSync(logoMp4Path)) {
-      res.writeHead(200, { "Content-Type": "video/mp4" });
-      res.end(readFileSync(logoMp4Path));
+    if (url.pathname === "/logo.mp4") {
+      serveFile(req, res, logoMp4Path, "video/mp4");
       return;
     }
 
     if (url.pathname === "/bookme.png") {
-      if (existsSync(bookQrPath)) {
-        res.writeHead(200, { "Content-Type": "image/png" });
-        res.end(readFileSync(bookQrPath));
-      } else {
-        res.writeHead(404).end();
-      }
+      serveFile(req, res, bookQrPath, "image/png");
       return;
     }
 
     if (url.pathname === "/swishme.png") {
-      if (existsSync(swishQrPath)) {
-        res.writeHead(200, { "Content-Type": "image/png" });
-        res.end(readFileSync(swishQrPath));
-      } else {
-        res.writeHead(404).end();
-      }
+      serveFile(req, res, swishQrPath, "image/png");
       return;
     }
 

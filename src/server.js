@@ -174,7 +174,10 @@ const BOARD_HTML = `<!doctype html>
     try {
       const res = await fetch("/requests");
       const all = await res.json();
-      const pending = all.filter(r => !r.played);
+      // "all" is newest-first (each new request is prepended). The pending queue
+      // should read like a real queue: first-requested shown first (top-left),
+      // so reverse to oldest-first before capping to the oldest N.
+      const pending = all.filter(r => !r.played).reverse();
       const played = all.filter(r => r.played);
 
       const shown = pending.slice(0, MAX_SHOWN);

@@ -79,6 +79,19 @@ delete `data/` on the NAS** — that logs you out of both Telegram and Spotify, 
 forgets which tracks were already seen (a reset would re-forward the whole playlist to
 Deezload).
 
+### Per-event heading/tagline
+
+Drop a `data/event.txt` file on the NAS (line 1 = heading, line 2 = tagline) to show a
+title on the board, e.g.:
+
+```
+Caroline & Jose Wedding
+Request your favourite song!
+```
+
+Edit it directly on the NAS for each event — no redeploy needed, the board picks it up
+within 30s. No file = no heading shown.
+
 Note: `docker-compose.yml` deliberately pins `DATA_DIR=/data` in `environment:`, which
 overrides whatever `.env` says (docker-compose's `environment:` wins over `env_file:`).
 That's what makes the bind mount line up — don't remove it.

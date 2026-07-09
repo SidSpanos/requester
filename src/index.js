@@ -11,6 +11,7 @@ import {
   updateRequestMetadata,
 } from "./requests-log.js";
 import { createHttpServer } from "./server.js";
+import { loadEvent } from "./event.js";
 
 const {
   SPOTIFY_CLIENT_ID,
@@ -72,6 +73,7 @@ createHttpServer(Number(PORT), {
   markPlayed: (uri) => {
     requestsLog = markRequestPlayed(DATA_DIR, uri);
   },
+  getEvent: () => loadEvent(DATA_DIR),
 });
 
 console.log("Connecting to Telegram...");

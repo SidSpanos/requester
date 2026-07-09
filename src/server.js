@@ -38,12 +38,36 @@ const BOARD_HTML = `<!doctype html>
   .logo-wrap { display: inline-flex; }
   .header video, .header img#logoGif { height: 16vh; max-height: 160px; border-radius: 10px; }
   .header-spacer { flex: 0 0 auto; height: 5vh; }
-  .stats {
+  .event-info {
     flex: 0 0 auto;
     text-align: center;
+    padding-bottom: 6px;
+    display: none;
+  }
+  .event-heading {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+  }
+  .event-tagline {
+    font-size: 0.95rem;
+    color: #9a9aa8;
+    margin-top: 2px;
+  }
+  .bottom-right-info {
+    position: fixed;
+    bottom: 10px;
+    right: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    z-index: 5;
+  }
+  .stats {
     color: #9a9aa8;
     font-size: 0.95rem;
-    padding-bottom: 6px;
+    text-align: right;
   }
   .qr-side {
     position: fixed;
@@ -218,16 +242,12 @@ const BOARD_HTML = `<!doctype html>
     z-index: 5;
   }
   .cooldown-text {
-    position: fixed;
-    bottom: 10px;
-    right: 32px;
     font-size: 0.7rem;
     color: rgba(255,255,255,0.55);
     text-align: right;
     max-width: 200px;
     line-height: 1.3;
     display: none;
-    z-index: 5;
   }
 </style>
 </head>
@@ -251,7 +271,10 @@ const BOARD_HTML = `<!doctype html>
     </div>
   </div>
   <div class="header-spacer"></div>
-  <div class="stats" id="stats"></div>
+  <div class="event-info" id="eventInfo">
+    <div class="event-heading" id="eventHeading"></div>
+    <div class="event-tagline" id="eventTagline"></div>
+  </div>
   <div class="grid-spacer"></div>
   <div id="grid" class="grid"><div class="empty">Waiting for the first request&hellip;</div></div>
   <div class="played-section">
@@ -259,7 +282,10 @@ const BOARD_HTML = `<!doctype html>
     <div id="playedStrip" class="played-strip"></div>
   </div>
   <img class="cooldown-qr" id="cooldownQr" src="/requestline.png" alt="Request via Telegram">
-  <div class="cooldown-text" id="cooldownText"></div>
+  <div class="bottom-right-info">
+    <div class="stats" id="stats"></div>
+    <div class="cooldown-text" id="cooldownText"></div>
+  </div>
 <script>
   const MAX_SHOWN = 24;
   const MAX_PLAYED_SHOWN = 60;
@@ -360,9 +386,28 @@ const BOARD_HTML = `<!doctype html>
     }
   }
 
+  async function refreshEvent() {
+    try {
+      const res = await fetch("/event");
+      const event = await res.json();
+      const info = document.getElementById("eventInfo");
+      if (event.heading || event.tagline) {
+        document.getElementById("eventHeading").textContent = event.heading;
+        document.getElementById("eventTagline").textContent = event.tagline;
+        info.style.display = "block";
+      } else {
+        info.style.display = "none";
+      }
+    } catch (err) {
+      // ignore — non-critical, just try again next tick
+    }
+  }
+
   refresh();
   refreshCooldown();
+  refreshEvent();
   setInterval(refresh, 5000);
+  setInterval(refreshEvent, 30000);
   setInterval(refreshCooldown, 15000);
 
   // Some kiosk/WebView browsers don't reliably honor the autoplay attribute, or
@@ -478,7 +523,7 @@ function serveFile(req, res, filePath, contentType) {
   createReadStream(filePath, { start, end }).pipe(res);
 }
 
-export function createHttpServer(port, { getStatus, getRequests, clearRequests, markPlayed }) {
+export function createHttpServer(port, { getStatus, getRequests, clearRequests, markPlayed, getEvent }) {
   const server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
 
@@ -559,6 +604,12 @@ export function createHttpServer(port, { getStatus, getRequests, clearRequests, 
     if (url.pathname === "/status") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(getStatus(), null, 2));
+      return;
+    }
+
+    if (url.pathname === "/event") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(getEvent()));
       return;
     }
 

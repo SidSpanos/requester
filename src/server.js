@@ -53,8 +53,8 @@ const BOARD_HTML = `<!doctype html>
     gap: 6px;
   }
   .qr-img, .qr-placeholder {
-    width: 84px;
-    height: 84px;
+    width: 88px;
+    height: 88px;
     border-radius: 10px;
     background: #fff;
     object-fit: contain;

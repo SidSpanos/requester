@@ -57,7 +57,7 @@ const BOARD_HTML = `<!doctype html>
   /* Left edge matches the request grid / played carousel's own left padding (32px);
      right edge matches the cooldown text's right anchor (16px) — see .cooldown-text. */
   .qr-side-left { left: 32px; }
-  .qr-side-right { right: 16px; }
+  .qr-side-right { right: 32px; }
   .qr-side.qr-hidden .qr-img,
   .qr-side.qr-hidden .qr-placeholder,
   .qr-side.qr-hidden .tip-label {
@@ -220,7 +220,7 @@ const BOARD_HTML = `<!doctype html>
   .cooldown-text {
     position: fixed;
     bottom: 10px;
-    right: 16px;
+    right: 32px;
     font-size: 0.7rem;
     color: rgba(255,255,255,0.55);
     text-align: right;

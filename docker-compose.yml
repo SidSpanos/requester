@@ -1,0 +1,23 @@
+services:
+  requester:
+    build: .
+    container_name: requester
+    restart: unless-stopped
+    environment:
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_PLAYLIST_ID=${SPOTIFY_PLAYLIST_ID}
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH}
+      - DEEZLOAD_USERNAME=${DEEZLOAD_USERNAME}
+      - POLL_INTERVAL_MS=${POLL_INTERVAL_MS:-12000}
+      - PORT=${PORT:-8787}
+      - DATA_DIR=/data
+    volumes:
+      - /volume1/docker/applications/requester/data:/data
+    networks:
+      - macvlan_1
+
+networks:
+  macvlan_1:
+    external: true

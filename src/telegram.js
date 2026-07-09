@@ -1,0 +1,33 @@
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { TelegramClient } from "telegram";
+import { StringSession } from "telegram/sessions/index.js";
+
+export async function createTelegramClient({ apiId, apiHash, dataDir }) {
+  const sessionPath = join(dataDir, "session.txt");
+  if (!existsSync(sessionPath)) {
+    throw new Error(
+      `No Telegram session found at ${sessionPath}. Run "npm run login" once first.`
+    );
+  }
+
+  const sessionString = readFileSync(sessionPath, "utf8").trim();
+  const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, {
+    connectionRetries: 5,
+  });
+
+  await client.connect();
+
+  const authorized = await client.checkAuthorization();
+  if (!authorized) {
+    throw new Error(
+      `Telegram session at ${sessionPath} is no longer valid. Delete it and run "npm run login" again.`
+    );
+  }
+
+  return client;
+}
+
+export async function sendToDeezload(client, username, spotifyUrl) {
+  await client.sendMessage(username, { message: spotifyUrl });
+}

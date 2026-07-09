@@ -1,0 +1,16 @@
+{
+  "name": "requester",
+  "version": "1.0.0",
+  "description": "Polls a Spotify playlist for new tracks and forwards them to Deezload via a Telegram userbot",
+  "type": "module",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "spotify-login": "node spotify-login.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "telegram": "^2.26.16"
+  }
+}

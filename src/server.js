@@ -37,7 +37,7 @@ const BOARD_HTML = `<!doctype html>
   }
   .logo-wrap { display: inline-flex; }
   .header video, .header img#logoGif { height: 16vh; max-height: 160px; border-radius: 10px; }
-  .header-spacer { flex: 0 0 auto; height: 5vh; }
+  .header-spacer { flex: 0 0 auto; height: 3vh; }
   .event-info {
     flex: 0 0 auto;
     text-align: center;
@@ -45,12 +45,12 @@ const BOARD_HTML = `<!doctype html>
     display: none;
   }
   .event-heading {
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     font-weight: 800;
     color: #fff;
   }
   .event-tagline {
-    font-size: 0.95rem;
+    font-size: 1.25rem;
     color: #9a9aa8;
     margin-top: 2px;
   }
@@ -249,6 +249,17 @@ const BOARD_HTML = `<!doctype html>
     line-height: 1.3;
     display: none;
   }
+  .footer {
+    position: fixed;
+    bottom: 6px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.22);
+    z-index: 1;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
@@ -286,6 +297,7 @@ const BOARD_HTML = `<!doctype html>
     <div class="stats" id="stats"></div>
     <div class="cooldown-text" id="cooldownText"></div>
   </div>
+  <div class="footer">Powered by Requestline</div>
 <script>
   const MAX_SHOWN = 24;
   const MAX_PLAYED_SHOWN = 60;

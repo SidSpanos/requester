@@ -33,7 +33,7 @@ const BOARD_HTML = `<!doctype html>
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 18px 24px 0;
+    padding: 32px 24px 0;
   }
   .logo-wrap { display: inline-flex; }
   .header video, .header img#logoGif { height: 16vh; max-height: 160px; border-radius: 10px; }
@@ -47,7 +47,7 @@ const BOARD_HTML = `<!doctype html>
   }
   .qr-side {
     position: fixed;
-    top: 18px;
+    top: 32px;
     display: flex;
     flex-direction: column;
     align-items: center;

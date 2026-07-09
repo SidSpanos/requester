@@ -22,22 +22,33 @@ const BOARD_HTML = `<!doctype html>
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     overflow: hidden;
   }
+  body { display: flex; flex-direction: column; }
   .header {
+    flex: 0 0 auto;
     display: flex; align-items: center; justify-content: center;
-    padding: 24px 0 12px;
+    padding: 18px 0 4px;
   }
-  .header img { height: 9vh; max-height: 90px; }
+  .header img { height: 8vh; max-height: 80px; }
+  .stats {
+    flex: 0 0 auto;
+    text-align: center;
+    color: #9a9aa8;
+    font-size: 0.95rem;
+    padding-bottom: 10px;
+  }
   .grid {
+    flex: 1 1 auto;
+    min-height: 0;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     grid-auto-rows: min-content;
     align-items: start;
     gap: 20px;
-    padding: 10px 32px 32px;
-    height: calc(100vh - 130px);
+    padding: 0 32px 16px;
     overflow: hidden;
   }
   .card {
+    position: relative;
     background: #16161f;
     border-radius: 16px;
     overflow: hidden;
@@ -46,6 +57,7 @@ const BOARD_HTML = `<!doctype html>
     animation: enter 0.5s ease-out;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   }
+  .art { position: relative; }
   .card img {
     width: 100%;
     aspect-ratio: 1 / 1;
@@ -53,6 +65,24 @@ const BOARD_HTML = `<!doctype html>
     display: block;
     background: #222;
   }
+  .mark-played {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .mark-played:active { background: rgba(30,215,96,0.9); }
   .card .info { padding: 12px 14px; }
   .card .name {
     font-size: 1.05rem;
@@ -76,6 +106,35 @@ const BOARD_HTML = `<!doctype html>
     font-size: 1.4rem;
     margin-top: 15vh;
   }
+  .played-section {
+    flex: 0 0 auto;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 32px 18px;
+  }
+  .played-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6a6a78;
+    margin-bottom: 8px;
+  }
+  .played-strip {
+    display: flex;
+    overflow-x: auto;
+    padding: 6px 4px;
+  }
+  .played-card {
+    flex: 0 0 auto;
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-left: -16px;
+    border: 2px solid #0b0b12;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+  .played-card:first-child { margin-left: 0; }
+  .played-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
   @keyframes enter {
     from { opacity: 0; transform: translateY(16px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
@@ -84,32 +143,53 @@ const BOARD_HTML = `<!doctype html>
 </head>
 <body>
   <div class="header"><img id="logo" src="/logo.webp" alt="logo"></div>
+  <div class="stats" id="stats"></div>
   <div id="grid" class="grid"><div class="empty">Waiting for the first request&hellip;</div></div>
+  <div class="played-section">
+    <div class="played-label">Already played</div>
+    <div id="playedStrip" class="played-strip"></div>
+  </div>
 <script>
   const MAX_SHOWN = 24;
+  const MAX_PLAYED_SHOWN = 60;
   let lastSignature = "";
 
   async function refresh() {
     try {
       const res = await fetch("/requests");
-      const requests = await res.json();
-      const shown = requests.slice(0, MAX_SHOWN);
-      const signature = shown.map(r => r.uri).join(",");
+      const all = await res.json();
+      const pending = all.filter(r => !r.played);
+      const played = all.filter(r => r.played);
+
+      const shown = pending.slice(0, MAX_SHOWN);
+      const shownPlayed = played.slice(0, MAX_PLAYED_SHOWN);
+      const signature = shown.map(r => r.uri).join(",") + "|" + shownPlayed.map(r => r.uri).join(",");
       if (signature === lastSignature) return;
       lastSignature = signature;
 
+      document.getElementById("stats").textContent =
+        all.length + " requested · " + played.length + " played";
+
       const grid = document.getElementById("grid");
-      if (shown.length === 0) {
-        grid.innerHTML = '<div class="empty">Waiting for the first request&hellip;</div>';
-        return;
-      }
-      grid.innerHTML = shown.map(r => \`
-        <div class="card">
-          <img src="\${r.imageUrl || ''}" alt="" onerror="this.style.visibility='hidden'">
-          <div class="info">
-            <div class="name">\${escapeHtml(r.name)}</div>
-            <div class="artist">\${escapeHtml(r.artists)}</div>
+      grid.innerHTML = shown.length === 0
+        ? '<div class="empty">Waiting for the first request&hellip;</div>'
+        : shown.map(r => \`
+          <div class="card">
+            <div class="art">
+              <img src="\${r.imageUrl || ''}" alt="" onerror="this.style.visibility='hidden'">
+              <button class="mark-played" data-uri="\${escapeAttr(r.uri)}" title="Mark as played">&#10003;</button>
+            </div>
+            <div class="info">
+              <div class="name">\${escapeHtml(r.name)}</div>
+              <div class="artist">\${escapeHtml(r.artists)}</div>
+            </div>
           </div>
+        \`).join("");
+
+      const strip = document.getElementById("playedStrip");
+      strip.innerHTML = shownPlayed.map(r => \`
+        <div class="played-card" title="\${escapeAttr(r.name + " — " + r.artists)}">
+          <img src="\${r.imageUrl || ''}" alt="">
         </div>
       \`).join("");
     } catch (err) {
@@ -122,6 +202,26 @@ const BOARD_HTML = `<!doctype html>
     div.textContent = s || "";
     return div.innerHTML;
   }
+
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  document.getElementById("grid").addEventListener("click", async (e) => {
+    const btn = e.target.closest(".mark-played");
+    if (!btn) return;
+    btn.disabled = true;
+    try {
+      await fetch("/requests/played", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uri: btn.dataset.uri }),
+      });
+      await refresh();
+    } catch (err) {
+      btn.disabled = false;
+    }
+  });
 
   refresh();
   setInterval(refresh, 5000);
@@ -147,7 +247,7 @@ const BOARD_HTML = `<!doctype html>
 </body>
 </html>`;
 
-export function createHttpServer(port, { getStatus, getRequests, clearRequests }) {
+export function createHttpServer(port, { getStatus, getRequests, clearRequests, markPlayed }) {
   const server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
 
@@ -161,6 +261,25 @@ export function createHttpServer(port, { getStatus, getRequests, clearRequests }
       clearRequests();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    if (url.pathname === "/requests/played" && req.method === "POST") {
+      let body = "";
+      req.on("data", (chunk) => {
+        body += chunk;
+      });
+      req.on("end", () => {
+        try {
+          const { uri } = JSON.parse(body || "{}");
+          if (uri) markPlayed(uri);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true }));
+        } catch (err) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: err.message }));
+        }
+      });
       return;
     }
 

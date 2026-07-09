@@ -31,3 +31,15 @@ export function clearRequestsLog(dataDir) {
   writeFileSync(logPath(dataDir), JSON.stringify([], null, 2), "utf8");
   return [];
 }
+
+/** Marks a request as played (manual DJ input) — moves it into the played carousel. */
+export function markPlayed(dataDir, uri) {
+  const log = loadRequestsLog(dataDir);
+  const entry = log.find((r) => r.uri === uri);
+  if (entry) {
+    entry.played = true;
+    entry.playedAt = new Date().toISOString();
+    writeFileSync(logPath(dataDir), JSON.stringify(log, null, 2), "utf8");
+  }
+  return log;
+}

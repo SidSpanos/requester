@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { getPlaylistTracks, loadRefreshToken, saveRefreshToken } from "./spotify.js";
 import { createTelegramClient, sendToDeezload } from "./telegram.js";
 import { loadState, saveState } from "./state.js";
-import { loadRequestsLog, appendRequest, clearRequestsLog } from "./requests-log.js";
+import { loadRequestsLog, appendRequest, clearRequestsLog, markPlayed as markRequestPlayed } from "./requests-log.js";
 import { createHttpServer } from "./server.js";
 
 const {
@@ -61,6 +61,9 @@ createHttpServer(Number(PORT), {
   clearRequests: () => {
     requestsLog = clearRequestsLog(DATA_DIR);
     console.log("Requests board cleared (playlist and Telegram forwarding state untouched).");
+  },
+  markPlayed: (uri) => {
+    requestsLog = markRequestPlayed(DATA_DIR, uri);
   },
 });
 
@@ -128,6 +131,8 @@ async function pollOnce() {
           imageUrl: track.imageUrl,
           url: track.url,
           addedAt: new Date().toISOString(),
+          played: false,
+          playedAt: null,
         });
 
         console.log(`New track: "${track.name}" — ${track.artists} -> forwarding to @${DEEZLOAD_USERNAME}`);

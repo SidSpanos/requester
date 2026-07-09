@@ -52,6 +52,18 @@ async function getAccessToken(clientId, clientSecret, refreshToken) {
   return { accessToken: cachedToken, refreshToken: data.refresh_token || refreshToken };
 }
 
+async function buildApiError(res, message) {
+  const body = await res.text();
+  const err = new Error(`${message}: ${res.status} ${body}`);
+  if (res.status === 429) {
+    const retryAfterHeader = res.headers.get("retry-after");
+    const retryAfterSeconds = retryAfterHeader !== null ? Number(retryAfterHeader) : NaN;
+    err.retryAfterMs =
+      Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : 60_000;
+  }
+  return err;
+}
+
 /**
  * Returns the current tracks in the playlist as [{ uri, url, name, artists }], in
  * playlist order. Follows Spotify's cursor pagination. Returns the (possibly rotated)
@@ -76,15 +88,7 @@ export async function getPlaylistTracks({ clientId, clientSecret, refreshToken, 
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      const err = new Error(`Spotify playlist request failed: ${res.status} ${body}`);
-      if (res.status === 429) {
-        const retryAfterHeader = res.headers.get("retry-after");
-        const retryAfterSeconds = retryAfterHeader !== null ? Number(retryAfterHeader) : NaN;
-        err.retryAfterMs =
-          Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : 60_000;
-      }
-      throw err;
+      throw await buildApiError(res, "Spotify playlist request failed");
     }
 
     const data = await res.json();
@@ -107,4 +111,39 @@ export async function getPlaylistTracks({ clientId, clientSecret, refreshToken, 
   }
 
   return { tracks, refreshToken: newRefreshToken };
+}
+
+/**
+ * Looks up a single track by ID — much lighter than polling the whole playlist.
+ * Used to enrich manually-forwarded requests (see watchOutgoingDeezloadMessages)
+ * with a real name/artist/image; callers should treat failures as non-fatal, since
+ * this only adds polish and shouldn't block the request from showing on the board.
+ */
+export async function getTrackMetadata({ clientId, clientSecret, refreshToken, trackId }) {
+  const { accessToken: token, refreshToken: newRefreshToken } = await getAccessToken(
+    clientId,
+    clientSecret,
+    refreshToken
+  );
+
+  const res = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    throw await buildApiError(res, "Spotify track lookup failed");
+  }
+
+  const track = await res.json();
+  const images = track.album?.images ?? [];
+  const image = images.find((img) => img.width && img.width <= 400) ?? images[0];
+
+  return {
+    uri: track.uri,
+    url: track.external_urls?.spotify ?? null,
+    name: track.name,
+    artists: (track.artists ?? []).map((a) => a.name).join(", "),
+    imageUrl: image?.url ?? null,
+    refreshToken: newRefreshToken,
+  };
 }

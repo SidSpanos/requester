@@ -1,9 +1,15 @@
 import "dotenv/config";
 import { mkdirSync } from "node:fs";
-import { getPlaylistTracks, loadRefreshToken, saveRefreshToken } from "./spotify.js";
-import { createTelegramClient, sendToDeezload } from "./telegram.js";
+import { getPlaylistTracks, getTrackMetadata, loadRefreshToken, saveRefreshToken } from "./spotify.js";
+import { createTelegramClient, sendToDeezload, watchOutgoingDeezloadMessages } from "./telegram.js";
 import { loadState, saveState } from "./state.js";
-import { loadRequestsLog, appendRequest, clearRequestsLog, markPlayed as markRequestPlayed } from "./requests-log.js";
+import {
+  loadRequestsLog,
+  appendRequest,
+  clearRequestsLog,
+  markPlayed as markRequestPlayed,
+  updateRequestMetadata,
+} from "./requests-log.js";
 import { createHttpServer } from "./server.js";
 
 const {
@@ -71,6 +77,47 @@ createHttpServer(Number(PORT), {
 console.log("Connecting to Telegram...");
 const telegramClient = await createTelegramClient({ apiId, apiHash: TELEGRAM_API_HASH, dataDir: DATA_DIR });
 console.log("Telegram connected.");
+
+// Catches Spotify links sent to Deezload some other way (manually pasted, or
+// forwarded from a direct DM) so they still show up on the board — independent of
+// the playlist poller, so this keeps working even during a Spotify API lockout.
+watchOutgoingDeezloadMessages(telegramClient, DEEZLOAD_USERNAME, async (trackId) => {
+  const uri = `spotify:track:${trackId}`;
+  if (requestsLog.some((r) => r.uri === uri)) return; // already tracked via the poller
+
+  const fallbackUrl = `https://open.spotify.com/track/${trackId}`;
+  requestsLog = appendRequest(DATA_DIR, {
+    uri,
+    name: "Song request",
+    artists: "(details loading…)",
+    imageUrl: null,
+    url: fallbackUrl,
+    addedAt: new Date().toISOString(),
+    played: false,
+    playedAt: null,
+  });
+  console.log(`Manual Deezload send detected: ${fallbackUrl} — added to board.`);
+
+  try {
+    const meta = await getTrackMetadata({
+      clientId: SPOTIFY_CLIENT_ID,
+      clientSecret: SPOTIFY_CLIENT_SECRET,
+      refreshToken: spotifyRefreshToken,
+      trackId,
+    });
+    if (meta.refreshToken !== spotifyRefreshToken) {
+      spotifyRefreshToken = meta.refreshToken;
+      saveRefreshToken(DATA_DIR, spotifyRefreshToken);
+    }
+    requestsLog = updateRequestMetadata(DATA_DIR, uri, {
+      name: meta.name,
+      artists: meta.artists,
+      imageUrl: meta.imageUrl,
+    });
+  } catch (err) {
+    console.warn(`Could not enrich manual request metadata (will keep showing generic): ${err.message}`);
+  }
+});
 
 let previousUris = loadState(DATA_DIR);
 if (previousUris === null) {

@@ -261,16 +261,14 @@ const BOARD_HTML = `<!doctype html>
     cursor: pointer;
   }
 
-  /* Hero mode: video fills the whole top band as a background, everything else
-     (QR codes, heading/tagline) stays at the exact same placements/coordinates —
-     they just now render on top of the video instead of on plain background. */
+  /* Hero mode: video fills the whole top band as a background. Kept in normal
+     document flow (not fixed / negative z-index) — that's the standard, reliable
+     "background video" pattern. QR codes are already position:fixed so they overlap
+     it automatically; the heading/tagline gets fixed-positioned too, at a coordinate
+     that lands inside the video band, so it reads as overlaid on top of it. */
   body.hero-mode .header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: relative;
     height: 38vh;
-    z-index: -2;
     padding: 0;
     overflow: hidden;
   }
@@ -289,6 +287,16 @@ const BOARD_HTML = `<!doctype html>
     position: absolute;
     inset: 0;
     background: linear-gradient(to bottom, rgba(0,0,0,0.12), rgba(11,11,18,0.4) 60%, rgba(11,11,18,0.85) 100%);
+  }
+  body.hero-mode .header-spacer {
+    display: none;
+  }
+  body.hero-mode .event-info {
+    position: fixed;
+    top: 26vh;
+    left: 0;
+    right: 0;
+    z-index: 2;
   }
 </style>
 </head>

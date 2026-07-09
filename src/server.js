@@ -86,7 +86,7 @@ const BOARD_HTML = `<!doctype html>
     color: #9a9aa8;
     font-weight: 600;
   }
-  .grid-spacer { flex: 0 0 auto; height: 10vh; }
+  .grid-spacer { flex: 0 0 auto; height: 5vh; }
   .grid {
     flex: 1 1 auto;
     min-height: 0;
@@ -209,7 +209,7 @@ const BOARD_HTML = `<!doctype html>
   .cooldown-qr {
     position: fixed;
     bottom: 10%;
-    right: 10%;
+    right: 5%;
     width: 152px;
     height: 152px;
     border-radius: 12px;

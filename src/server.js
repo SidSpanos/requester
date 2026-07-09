@@ -7,6 +7,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
 const logoWebpPath = join(publicDir, "logo.webp");
 const logoMp4Path = join(publicDir, "logo.mp4");
+const bookQrPath = join(publicDir, "bookme.png");
+const swishQrPath = join(publicDir, "swishme.png");
 
 const BOARD_HTML = `<!doctype html>
 <html>
@@ -26,8 +28,11 @@ const BOARD_HTML = `<!doctype html>
   body { display: flex; flex-direction: column; }
   .header {
     flex: 0 0 auto;
-    display: flex; align-items: center; justify-content: center;
-    padding: 18px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(20px, 5vw, 64px);
+    padding: 18px 24px 0;
   }
   .header video { height: 16vh; max-height: 160px; border-radius: 10px; }
   .header-spacer { flex: 0 0 auto; height: 5vh; }
@@ -38,22 +43,21 @@ const BOARD_HTML = `<!doctype html>
     font-size: 0.95rem;
     padding-bottom: 6px;
   }
-  .qr-corner {
-    position: fixed;
-    top: 20px;
-    right: 24px;
+  .qr-side {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    z-index: 10;
   }
-  .qr-placeholder {
+  .qr-img, .qr-placeholder {
     width: 84px;
     height: 84px;
-    background: #fff;
     border-radius: 10px;
-    display: flex;
+    background: #fff;
+    object-fit: contain;
+  }
+  .qr-placeholder {
+    display: none;
     align-items: center;
     justify-content: center;
     color: #111;
@@ -190,11 +194,21 @@ const BOARD_HTML = `<!doctype html>
 </style>
 </head>
 <body>
-  <div class="qr-corner">
-    <div class="qr-placeholder">QR CODE</div>
-    <div class="tip-label">Tip via Swish</div>
+  <div class="header">
+    <div class="qr-side">
+      <img class="qr-img" id="bookQrImg" src="/bookme.png" alt="Book me"
+           onerror="this.style.display='none'; document.getElementById('bookQrPlaceholder').style.display='flex';">
+      <div class="qr-placeholder" id="bookQrPlaceholder">QR CODE</div>
+      <div class="tip-label">Book Me</div>
+    </div>
+    <video id="logo" autoplay loop muted playsinline src="/logo.mp4"></video>
+    <div class="qr-side">
+      <img class="qr-img" id="swishQrImg" src="/swishme.png" alt="Swish"
+           onerror="this.style.display='none'; document.getElementById('swishQrPlaceholder').style.display='flex';">
+      <div class="qr-placeholder" id="swishQrPlaceholder">QR CODE</div>
+      <div class="tip-label">Tip via Swish</div>
+    </div>
   </div>
-  <div class="header"><video id="logo" autoplay loop muted playsinline src="/logo.mp4"></video></div>
   <div class="header-spacer"></div>
   <div class="stats" id="stats"></div>
   <div class="grid-spacer"></div>
@@ -364,6 +378,26 @@ export function createHttpServer(port, { getStatus, getRequests, clearRequests, 
     if (url.pathname === "/logo.mp4" && existsSync(logoMp4Path)) {
       res.writeHead(200, { "Content-Type": "video/mp4" });
       res.end(readFileSync(logoMp4Path));
+      return;
+    }
+
+    if (url.pathname === "/bookme.png") {
+      if (existsSync(bookQrPath)) {
+        res.writeHead(200, { "Content-Type": "image/png" });
+        res.end(readFileSync(bookQrPath));
+      } else {
+        res.writeHead(404).end();
+      }
+      return;
+    }
+
+    if (url.pathname === "/swishme.png") {
+      if (existsSync(swishQrPath)) {
+        res.writeHead(200, { "Content-Type": "image/png" });
+        res.end(readFileSync(swishQrPath));
+      } else {
+        res.writeHead(404).end();
+      }
       return;
     }
 

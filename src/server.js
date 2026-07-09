@@ -196,25 +196,25 @@ const BOARD_HTML = `<!doctype html>
   }
   .cooldown-block {
     position: fixed;
-    bottom: 10px;
-    right: 16px;
+    bottom: 10%;
+    right: 10%;
     display: none;
     flex-direction: column;
     align-items: flex-end;
-    gap: 5px;
+    gap: 8px;
     z-index: 5;
   }
   .cooldown-qr {
-    width: 76px;
-    height: 76px;
-    border-radius: 8px;
+    width: 152px;
+    height: 152px;
+    border-radius: 12px;
     background: #fff;
   }
   .cooldown-text {
-    font-size: 0.7rem;
-    color: rgba(255,255,255,0.55);
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
     text-align: right;
-    max-width: 170px;
+    max-width: 220px;
     line-height: 1.3;
   }
 </style>

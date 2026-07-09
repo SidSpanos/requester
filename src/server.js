@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
-const logoPath = join(publicDir, "logo.webp");
+const logoWebpPath = join(publicDir, "logo.webp");
+const logoGifPath = join(publicDir, "logo.gif");
 
 const BOARD_HTML = `<!doctype html>
 <html>
@@ -26,16 +27,49 @@ const BOARD_HTML = `<!doctype html>
   .header {
     flex: 0 0 auto;
     display: flex; align-items: center; justify-content: center;
-    padding: 18px 0 4px;
+    padding: 18px 0 0;
   }
-  .header img { height: 8vh; max-height: 80px; }
-  .stats {
+  .header img { height: 16vh; max-height: 160px; }
+  .header-spacer { flex: 0 0 auto; height: 5vh; }
+  .info-row {
     flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 6px;
+  }
+  .stats {
     text-align: center;
     color: #9a9aa8;
     font-size: 0.95rem;
-    padding-bottom: 10px;
   }
+  .tip-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .qr-placeholder {
+    width: 84px;
+    height: 84px;
+    background: #fff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #111;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+  .tip-label {
+    font-size: 0.8rem;
+    color: #9a9aa8;
+    font-weight: 600;
+  }
+  .grid-spacer { flex: 0 0 auto; height: 10vh; }
   .grid {
     flex: 1 1 auto;
     min-height: 0;
@@ -158,8 +192,16 @@ const BOARD_HTML = `<!doctype html>
 </style>
 </head>
 <body>
-  <div class="header"><img id="logo" src="/logo.webp" alt="logo"></div>
-  <div class="stats" id="stats"></div>
+  <div class="header"><img id="logo" src="/logo.gif" alt="logo"></div>
+  <div class="header-spacer"></div>
+  <div class="info-row">
+    <div class="stats" id="stats"></div>
+    <div class="tip-block">
+      <div class="qr-placeholder">QR CODE</div>
+      <div class="tip-label">Tip via Swish</div>
+    </div>
+  </div>
+  <div class="grid-spacer"></div>
   <div id="grid" class="grid"><div class="empty">Waiting for the first request&hellip;</div></div>
   <div class="played-section">
     <div class="played-label">Already played</div>
@@ -186,8 +228,10 @@ const BOARD_HTML = `<!doctype html>
       if (signature === lastSignature) return;
       lastSignature = signature;
 
+      // TODO: wire up real tip totals once the Swish integration exists.
+      const dummyTippedKr = 0;
       document.getElementById("stats").textContent =
-        all.length + " requested · " + played.length + " played";
+        all.length + " requested · " + played.length + " played · " + dummyTippedKr + " kr tipped";
 
       const grid = document.getElementById("grid");
       grid.innerHTML = shown.length === 0
@@ -315,9 +359,15 @@ export function createHttpServer(port, { getStatus, getRequests, clearRequests, 
       return;
     }
 
-    if (url.pathname === "/logo.webp" && existsSync(logoPath)) {
+    if (url.pathname === "/logo.webp" && existsSync(logoWebpPath)) {
       res.writeHead(200, { "Content-Type": "image/webp" });
-      res.end(readFileSync(logoPath));
+      res.end(readFileSync(logoWebpPath));
+      return;
+    }
+
+    if (url.pathname === "/logo.gif" && existsSync(logoGifPath)) {
+      res.writeHead(200, { "Content-Type": "image/gif" });
+      res.end(readFileSync(logoGifPath));
       return;
     }
 

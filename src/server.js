@@ -257,8 +257,38 @@ const BOARD_HTML = `<!doctype html>
     text-align: center;
     font-size: 0.65rem;
     color: rgba(255,255,255,0.22);
-    z-index: 1;
-    pointer-events: none;
+    z-index: 6;
+    cursor: pointer;
+  }
+
+  /* Hero mode: video fills the whole top band as a background, everything else
+     (QR codes, heading/tagline) stays at the exact same placements/coordinates —
+     they just now render on top of the video instead of on plain background. */
+  body.hero-mode .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 38vh;
+    z-index: -2;
+    padding: 0;
+    overflow: hidden;
+  }
+  body.hero-mode .header video,
+  body.hero-mode .header img#logoGif {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    border-radius: 0;
+  }
+  body.hero-mode .header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.12), rgba(11,11,18,0.4) 60%, rgba(11,11,18,0.85) 100%);
   }
 </style>
 </head>
@@ -495,6 +525,17 @@ const BOARD_HTML = `<!doctype html>
   }
   setupQrToggle("bookQrSide", "bookQrHidden");
   setupQrToggle("swishQrSide", "swishQrHidden");
+
+  // Tap the footer to swap between the classic layout and the hero-video-background
+  // layout — everything else stays at the same placements either way, so this only
+  // toggles how the video itself renders. Persisted via localStorage.
+  if (localStorage.getItem("heroMode") === "on") {
+    document.body.classList.add("hero-mode");
+  }
+  document.querySelector(".footer").addEventListener("click", () => {
+    const nowOn = document.body.classList.toggle("hero-mode");
+    localStorage.setItem("heroMode", nowOn ? "on" : "off");
+  });
 </script>
 </body>
 </html>`;

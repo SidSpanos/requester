@@ -34,6 +34,7 @@ const BOARD_HTML = `<!doctype html>
     gap: clamp(20px, 5vw, 64px);
     padding: 18px 24px 0;
   }
+  .logo-wrap { display: inline-flex; }
   .header video { height: 16vh; max-height: 160px; border-radius: 10px; }
   .header-spacer { flex: 0 0 auto; height: 5vh; }
   .stats {
@@ -201,7 +202,9 @@ const BOARD_HTML = `<!doctype html>
       <div class="qr-placeholder" id="bookQrPlaceholder">QR CODE</div>
       <div class="tip-label">Book Me</div>
     </div>
-    <video id="logo" autoplay loop muted playsinline src="/logo.mp4"></video>
+    <div id="logoWrap" class="logo-wrap">
+      <video id="logo" autoplay loop muted playsinline webkit-playsinline disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" src="/logo.mp4"></video>
+    </div>
     <div class="qr-side">
       <img class="qr-img" id="swishQrImg" src="/swishme.png" alt="Swish"
            onerror="this.style.display='none'; document.getElementById('swishQrPlaceholder').style.display='flex';">
@@ -300,10 +303,23 @@ const BOARD_HTML = `<!doctype html>
   refresh();
   setInterval(refresh, 5000);
 
+  // Some kiosk/WebView browsers don't reliably honor the autoplay attribute, or
+  // pause the video when their native fullscreen player is tapped — force it to
+  // keep playing regardless.
+  const logoVideo = document.getElementById("logo");
+  function keepLogoPlaying() {
+    const p = logoVideo.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+  keepLogoPlaying();
+  logoVideo.addEventListener("pause", keepLogoPlaying);
+
   // Hidden reset: click the logo 3 times within 1.5s to clear the board display.
   // Does not touch the Spotify playlist or the Telegram-forwarding dedup state.
+  // Bound to the wrapper (not the video itself) so it doesn't fight with the
+  // video's own native tap/fullscreen handling on iOS.
   let clickTimes = [];
-  document.getElementById("logo").addEventListener("click", async () => {
+  document.getElementById("logoWrap").addEventListener("click", async () => {
     const now = Date.now();
     clickTimes = clickTimes.filter(t => now - t < 1500);
     clickTimes.push(now);

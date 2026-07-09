@@ -399,7 +399,7 @@ export function createHttpServer(port, { getStatus, getRequests, clearRequests, 
       return;
     }
 
-    if (url.pathname === "/board") {
+    if (url.pathname === "/board" || url.pathname === "/") {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(BOARD_HTML);
       return;
@@ -425,13 +425,19 @@ export function createHttpServer(port, { getStatus, getRequests, clearRequests, 
       return;
     }
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(getStatus(), null, 2));
+    if (url.pathname === "/status") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(getStatus(), null, 2));
+      return;
+    }
+
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Not found");
   });
 
   server.listen(port, () => {
     console.log(
-      `HTTP server listening on :${port} — / status, /board kiosk display, /requests JSON, /health liveness`
+      `HTTP server listening on :${port} — / and /board show the kiosk display, /status JSON, /requests JSON, /health liveness`
     );
   });
 

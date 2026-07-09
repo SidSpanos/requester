@@ -66,8 +66,10 @@ Copy the project folder (including the `data/` folder from step 6) to the NAS, t
 docker compose up -d --build
 ```
 
-- Status: `curl http://<nas-ip>:8787/` (or open it in a browser) — shows last poll
-  time, last track forwarded, and any last error.
+- Kiosk display: `http://<nas-ip>:8787/` (or `/board`, same thing) — this is the
+  default now so the board is what loads if you just visit the domain.
+- Status: `curl http://<nas-ip>:8787/status` — shows last poll time, last track
+  forwarded, and any last error.
 - Liveness check: `GET /health` → `200 ok`.
 - Logs: `docker compose logs -f requester`.
 

@@ -33,7 +33,6 @@ const BOARD_HTML = `<!doctype html>
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: clamp(20px, 5vw, 64px);
     padding: 18px 24px 0;
   }
   .logo-wrap { display: inline-flex; }
@@ -47,10 +46,23 @@ const BOARD_HTML = `<!doctype html>
     padding-bottom: 6px;
   }
   .qr-side {
+    position: fixed;
+    top: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
+    z-index: 5;
+  }
+  /* Left edge matches the request grid / played carousel's own left padding (32px);
+     right edge matches the cooldown text's right anchor (16px) — see .cooldown-text. */
+  .qr-side-left { left: 32px; }
+  .qr-side-right { right: 16px; }
+  .qr-side.qr-hidden .qr-img,
+  .qr-side.qr-hidden .qr-placeholder,
+  .qr-side.qr-hidden .tip-label {
+    opacity: 0;
+    pointer-events: none;
   }
   .qr-img, .qr-placeholder {
     width: 88px;
@@ -220,22 +232,22 @@ const BOARD_HTML = `<!doctype html>
 </style>
 </head>
 <body>
+  <div class="qr-side qr-side-left" id="bookQrSide">
+    <img class="qr-img" id="bookQrImg" src="/bookme.png" alt="Book me"
+         onerror="this.style.display='none'; document.getElementById('bookQrPlaceholder').style.display='flex';">
+    <div class="qr-placeholder" id="bookQrPlaceholder">QR CODE</div>
+    <div class="tip-label">Book Me</div>
+  </div>
+  <div class="qr-side qr-side-right" id="swishQrSide">
+    <img class="qr-img" id="swishQrImg" src="/swishme.png" alt="Swish"
+         onerror="this.style.display='none'; document.getElementById('swishQrPlaceholder').style.display='flex';">
+    <div class="qr-placeholder" id="swishQrPlaceholder">QR CODE</div>
+    <div class="tip-label">Tip via Swish</div>
+  </div>
   <div class="header">
-    <div class="qr-side">
-      <img class="qr-img" id="bookQrImg" src="/bookme.png" alt="Book me"
-           onerror="this.style.display='none'; document.getElementById('bookQrPlaceholder').style.display='flex';">
-      <div class="qr-placeholder" id="bookQrPlaceholder">QR CODE</div>
-      <div class="tip-label">Book Me</div>
-    </div>
     <div id="logoWrap" class="logo-wrap">
       <video id="logo" autoplay loop muted playsinline webkit-playsinline disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" src="/logo.mp4"></video>
       <img id="logoGif" src="/logo.gif" alt="logo" style="display:none;">
-    </div>
-    <div class="qr-side">
-      <img class="qr-img" id="swishQrImg" src="/swishme.png" alt="Swish"
-           onerror="this.style.display='none'; document.getElementById('swishQrPlaceholder').style.display='flex';">
-      <div class="qr-placeholder" id="swishQrPlaceholder">QR CODE</div>
-      <div class="tip-label">Tip via Swish</div>
     </div>
   </div>
   <div class="header-spacer"></div>
@@ -401,6 +413,31 @@ const BOARD_HTML = `<!doctype html>
       // ignore — worst case the board just doesn't clear, try again
     }
   });
+
+  // Triple-click a header QR to hide it (e.g. if you don't want it up during a
+  // set), triple-click the same now-empty hotspot to bring it back. The container
+  // stays in the DOM at full size when "hidden" (just visually faded out via
+  // .qr-hidden), so the same tap zone keeps working either way. Persisted per
+  // browser via localStorage so it survives a page reload.
+  function setupQrToggle(elementId, storageKey) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    if (localStorage.getItem(storageKey) === "hidden") {
+      el.classList.add("qr-hidden");
+    }
+    let qrClickTimes = [];
+    el.addEventListener("click", () => {
+      const now = Date.now();
+      qrClickTimes = qrClickTimes.filter(t => now - t < 1500);
+      qrClickTimes.push(now);
+      if (qrClickTimes.length < 3) return;
+      qrClickTimes = [];
+      const nowHidden = el.classList.toggle("qr-hidden");
+      localStorage.setItem(storageKey, nowHidden ? "hidden" : "visible");
+    });
+  }
+  setupQrToggle("bookQrSide", "bookQrHidden");
+  setupQrToggle("swishQrSide", "swishQrHidden");
 </script>
 </body>
 </html>`;

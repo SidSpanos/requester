@@ -66,7 +66,7 @@ export async function getPlaylistTracks({ clientId, clientSecret, refreshToken, 
 
   // Note: this endpoint's entries nest track data under "item", not "track" — a schema
   // change that came with the /tracks -> /items endpoint migration.
-  const fields = "items(item(uri,name,external_urls.spotify,artists(name))),next";
+  const fields = "items(item(uri,name,external_urls.spotify,artists(name),album(images))),next";
   let url = `https://api.spotify.com/v1/playlists/${playlistId}/items?fields=${encodeURIComponent(fields)}&limit=100`;
 
   const tracks = [];
@@ -83,11 +83,16 @@ export async function getPlaylistTracks({ clientId, clientSecret, refreshToken, 
     for (const entry of data.items) {
       const track = entry.item;
       if (!track || !track.uri) continue; // skip local/removed tracks
+      const images = track.album?.images ?? [];
+      // Images are typically ordered largest-first (640/300/64px) — pick a mid-size
+      // one for the kiosk board rather than the full-res original.
+      const image = images.find((img) => img.width && img.width <= 400) ?? images[0];
       tracks.push({
         uri: track.uri,
         url: track.external_urls?.spotify ?? null,
         name: track.name,
         artists: (track.artists ?? []).map((a) => a.name).join(", "),
+        imageUrl: image?.url ?? null,
       });
     }
     url = data.next;

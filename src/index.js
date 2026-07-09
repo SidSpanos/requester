@@ -3,7 +3,8 @@ import { mkdirSync } from "node:fs";
 import { getPlaylistTracks, loadRefreshToken, saveRefreshToken } from "./spotify.js";
 import { createTelegramClient, sendToDeezload } from "./telegram.js";
 import { loadState, saveState } from "./state.js";
-import { createStatusServer } from "./server.js";
+import { loadRequestsLog, appendRequest } from "./requests-log.js";
+import { createHttpServer } from "./server.js";
 
 const {
   SPOTIFY_CLIENT_ID,
@@ -52,7 +53,12 @@ const status = {
   knownTrackCount: 0,
 };
 
-createStatusServer(Number(PORT), () => status);
+let requestsLog = loadRequestsLog(DATA_DIR);
+
+createHttpServer(Number(PORT), {
+  getStatus: () => status,
+  getRequests: () => requestsLog,
+});
 
 console.log("Connecting to Telegram...");
 const telegramClient = await createTelegramClient({ apiId, apiHash: TELEGRAM_API_HASH, dataDir: DATA_DIR });
@@ -110,6 +116,16 @@ async function pollOnce() {
           console.warn(`Skipping "${track.name}" — no public Spotify URL.`);
           continue;
         }
+
+        requestsLog = appendRequest(DATA_DIR, {
+          uri: track.uri,
+          name: track.name,
+          artists: track.artists,
+          imageUrl: track.imageUrl,
+          url: track.url,
+          addedAt: new Date().toISOString(),
+        });
+
         console.log(`New track: "${track.name}" — ${track.artists} -> forwarding to @${DEEZLOAD_USERNAME}`);
         const ok = await sendWithRetry(track);
         if (ok) {

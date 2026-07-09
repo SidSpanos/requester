@@ -76,7 +76,15 @@ export async function getPlaylistTracks({ clientId, clientSecret, refreshToken, 
     });
 
     if (!res.ok) {
-      throw new Error(`Spotify playlist request failed: ${res.status} ${await res.text()}`);
+      const body = await res.text();
+      const err = new Error(`Spotify playlist request failed: ${res.status} ${body}`);
+      if (res.status === 429) {
+        const retryAfterHeader = res.headers.get("retry-after");
+        const retryAfterSeconds = retryAfterHeader !== null ? Number(retryAfterHeader) : NaN;
+        err.retryAfterMs =
+          Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : 60_000;
+      }
+      throw err;
     }
 
     const data = await res.json();

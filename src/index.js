@@ -51,6 +51,7 @@ const status = {
   lastError: null,
   lastTrackSent: null,
   knownTrackCount: 0,
+  rateLimitedUntil: null,
 };
 
 let requestsLog = loadRequestsLog(DATA_DIR);
@@ -77,6 +78,7 @@ if (previousUris === null) {
 }
 
 let isPolling = false;
+let rateLimitedUntil = 0;
 
 async function sendWithRetry(track, attempts = 3) {
   for (let i = 1; i <= attempts; i++) {
@@ -95,6 +97,7 @@ async function sendWithRetry(track, attempts = 3) {
 
 async function pollOnce() {
   if (isPolling) return; // don't overlap runs if a poll is still in flight
+  if (Date.now() < rateLimitedUntil) return; // Spotify told us to back off — skip silently
   isPolling = true;
   try {
     const { tracks, refreshToken: newRefreshToken } = await getPlaylistTracks({
@@ -151,10 +154,17 @@ async function pollOnce() {
 
     status.lastPollOk = true;
     status.lastError = null;
+    status.rateLimitedUntil = null;
   } catch (err) {
     status.lastPollOk = false;
     status.lastError = err.message;
-    console.error(`Poll failed: ${err.message}`);
+    if (err.retryAfterMs) {
+      rateLimitedUntil = Date.now() + err.retryAfterMs;
+      status.rateLimitedUntil = new Date(rateLimitedUntil).toISOString();
+      console.error(`Spotify rate-limited us — backing off until ${status.rateLimitedUntil}`);
+    } else {
+      console.error(`Poll failed: ${err.message}`);
+    }
   } finally {
     status.lastPollAt = new Date().toISOString();
     isPolling = false;

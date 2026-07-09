@@ -83,7 +83,7 @@ const BOARD_HTML = `<!doctype html>
 </style>
 </head>
 <body>
-  <div class="header"><img src="/logo.webp" alt="logo"></div>
+  <div class="header"><img id="logo" src="/logo.webp" alt="logo"></div>
   <div id="grid" class="grid"><div class="empty">Waiting for the first request&hellip;</div></div>
 <script>
   const MAX_SHOWN = 24;
@@ -125,17 +125,42 @@ const BOARD_HTML = `<!doctype html>
 
   refresh();
   setInterval(refresh, 5000);
+
+  // Hidden reset: click the logo 3 times within 1.5s to clear the board display.
+  // Does not touch the Spotify playlist or the Telegram-forwarding dedup state.
+  let clickTimes = [];
+  document.getElementById("logo").addEventListener("click", async () => {
+    const now = Date.now();
+    clickTimes = clickTimes.filter(t => now - t < 1500);
+    clickTimes.push(now);
+    if (clickTimes.length < 3) return;
+    clickTimes = [];
+
+    try {
+      await fetch("/requests/clear", { method: "POST" });
+      await refresh();
+    } catch (err) {
+      // ignore — worst case the board just doesn't clear, try again
+    }
+  });
 </script>
 </body>
 </html>`;
 
-export function createHttpServer(port, { getStatus, getRequests }) {
+export function createHttpServer(port, { getStatus, getRequests, clearRequests }) {
   const server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
 
     if (url.pathname === "/health") {
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end("ok");
+      return;
+    }
+
+    if (url.pathname === "/requests/clear" && req.method === "POST") {
+      clearRequests();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true }));
       return;
     }
 

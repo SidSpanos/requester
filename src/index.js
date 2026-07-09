@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { getPlaylistTracks, loadRefreshToken, saveRefreshToken } from "./spotify.js";
 import { createTelegramClient, sendToDeezload } from "./telegram.js";
 import { loadState, saveState } from "./state.js";
-import { loadRequestsLog, appendRequest } from "./requests-log.js";
+import { loadRequestsLog, appendRequest, clearRequestsLog } from "./requests-log.js";
 import { createHttpServer } from "./server.js";
 
 const {
@@ -58,6 +58,10 @@ let requestsLog = loadRequestsLog(DATA_DIR);
 createHttpServer(Number(PORT), {
   getStatus: () => status,
   getRequests: () => requestsLog,
+  clearRequests: () => {
+    requestsLog = clearRequestsLog(DATA_DIR);
+    console.log("Requests board cleared (playlist and Telegram forwarding state untouched).");
+  },
 });
 
 console.log("Connecting to Telegram...");

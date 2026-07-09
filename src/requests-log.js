@@ -22,3 +22,12 @@ export function appendRequest(dataDir, entry) {
   writeFileSync(logPath(dataDir), JSON.stringify(trimmed, null, 2), "utf8");
   return trimmed;
 }
+
+/**
+ * Clears the displayed requests log only — does not touch state.json (the Spotify
+ * dedup baseline), so already-seen tracks won't be re-forwarded to Deezload.
+ */
+export function clearRequestsLog(dataDir) {
+  writeFileSync(logPath(dataDir), JSON.stringify([], null, 2), "utf8");
+  return [];
+}

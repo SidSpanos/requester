@@ -7,6 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
 const logoWebpPath = join(publicDir, "logo.webp");
 const logoMp4Path = join(publicDir, "logo.mp4");
+const logoGifPath = join(publicDir, "logo.gif");
 const bookQrPath = join(publicDir, "bookme.png");
 const swishQrPath = join(publicDir, "swishme.png");
 
@@ -35,7 +36,7 @@ const BOARD_HTML = `<!doctype html>
     padding: 18px 24px 0;
   }
   .logo-wrap { display: inline-flex; }
-  .header video { height: 16vh; max-height: 160px; border-radius: 10px; }
+  .header video, .header img#logoGif { height: 16vh; max-height: 160px; border-radius: 10px; }
   .header-spacer { flex: 0 0 auto; height: 5vh; }
   .stats {
     flex: 0 0 auto;
@@ -204,6 +205,7 @@ const BOARD_HTML = `<!doctype html>
     </div>
     <div id="logoWrap" class="logo-wrap">
       <video id="logo" autoplay loop muted playsinline webkit-playsinline disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" src="/logo.mp4"></video>
+      <img id="logoGif" src="/logo.gif" alt="logo" style="display:none;">
     </div>
     <div class="qr-side">
       <img class="qr-img" id="swishQrImg" src="/swishme.png" alt="Swish"
@@ -305,14 +307,32 @@ const BOARD_HTML = `<!doctype html>
 
   // Some kiosk/WebView browsers don't reliably honor the autoplay attribute, or
   // pause the video when their native fullscreen player is tapped — force it to
-  // keep playing regardless.
+  // keep playing regardless. If it still can't play inline as intended (errors out,
+  // or iOS forces its native fullscreen player despite playsinline), fall back to
+  // the animated GIF instead, which never has this problem since it's just an image.
   const logoVideo = document.getElementById("logo");
+  const logoGif = document.getElementById("logoGif");
+  let usingGifFallback = false;
+
+  function useGifFallback() {
+    if (usingGifFallback) return;
+    usingGifFallback = true;
+    logoVideo.pause();
+    logoVideo.style.display = "none";
+    logoGif.style.display = "block";
+  }
+
   function keepLogoPlaying() {
+    if (usingGifFallback) return;
     const p = logoVideo.play();
     if (p && p.catch) p.catch(() => {});
   }
   keepLogoPlaying();
   logoVideo.addEventListener("pause", keepLogoPlaying);
+  logoVideo.addEventListener("error", useGifFallback);
+  // Non-standard iOS Safari event — fires exactly when the video is forced into
+  // the native fullscreen player despite the playsinline attribute.
+  logoVideo.addEventListener("webkitbeginfullscreen", useGifFallback);
 
   // Hidden reset: click the logo 3 times within 1.5s to clear the board display.
   // Does not touch the Spotify playlist or the Telegram-forwarding dedup state.
@@ -428,6 +448,11 @@ export function createHttpServer(port, { getStatus, getRequests, clearRequests, 
 
     if (url.pathname === "/logo.mp4") {
       serveFile(req, res, logoMp4Path, "video/mp4");
+      return;
+    }
+
+    if (url.pathname === "/logo.gif") {
+      serveFile(req, res, logoGifPath, "image/gif");
       return;
     }
 

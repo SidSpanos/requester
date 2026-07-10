@@ -297,6 +297,9 @@ const BOARD_HTML = `<!doctype html>
   body.hero-mode .header-spacer {
     display: none;
   }
+  body.hero-mode .grid-spacer {
+    height: 3vmin;
+  }
   body.hero-mode .event-info {
     position: fixed;
     top: 26vh;

@@ -110,7 +110,7 @@ const BOARD_HTML = `<!doctype html>
     color: #9a9aa8;
     font-weight: 600;
   }
-  .grid-spacer { flex: 0 0 auto; height: 8vmin; }
+  .grid-spacer { flex: 0 0 auto; height: 3vmin; }
   .grid {
     flex: 1 1 auto;
     min-height: 0;
@@ -296,9 +296,6 @@ const BOARD_HTML = `<!doctype html>
   }
   body.hero-mode .header-spacer {
     display: none;
-  }
-  body.hero-mode .grid-spacer {
-    height: 3vmin;
   }
   body.hero-mode .event-info {
     position: fixed;

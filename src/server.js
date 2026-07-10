@@ -110,7 +110,7 @@ const BOARD_HTML = `<!doctype html>
     color: #9a9aa8;
     font-weight: 600;
   }
-  .grid-spacer { flex: 0 0 auto; height: 5vh; }
+  .grid-spacer { flex: 0 0 auto; height: 8vh; }
   .grid {
     flex: 1 1 auto;
     min-height: 0;
@@ -120,8 +120,14 @@ const BOARD_HTML = `<!doctype html>
     align-items: start;
     gap: 20px;
     padding: 0 32px 16px;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.25) transparent;
   }
+  .grid::-webkit-scrollbar { width: 8px; }
+  .grid::-webkit-scrollbar-track { background: transparent; }
+  .grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 4px; }
   .card {
     position: relative;
     background: #16161f;

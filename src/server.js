@@ -110,7 +110,7 @@ const BOARD_HTML = `<!doctype html>
     color: #9a9aa8;
     font-weight: 600;
   }
-  .grid-spacer { flex: 0 0 auto; height: 8vh; }
+  .grid-spacer { flex: 0 0 auto; height: 8vmin; }
   .grid {
     flex: 1 1 auto;
     min-height: 0;
